@@ -1,0 +1,32 @@
+{
+  "name": "feature-flag-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "control-plane",
+    "sdk/js",
+    "ui",
+    "loadtest"
+  ],
+  "scripts": {
+    "setup": "npm install",
+    "build": "npm run -ws --if-present build",
+    "test": "npm run -ws --if-present test",
+    "lint": "npm run -ws --if-present lint",
+    "typecheck": "npm run -ws --if-present typecheck",
+    "dev:control-plane": "npm run -w @ff/control-plane dev",
+    "dev:ui": "npm run -w @ff/ui dev",
+    "bench": "npm run -w @ff/loadtest start",
+    "bench:sdk": "npm run -w @ff/loadtest sdk",
+    "demo:e2e-live": "node scripts/demo/live-e2e-demo.mjs",
+    "drill:incident": "node scripts/drills/incident-drill.mjs",
+    "drill:redis-stale": "node scripts/drills/redis-stale-state-check.mjs",
+    "quickstart:smoke": "npm run demo:e2e-live",
+    "dev-up": "docker compose up -d",
+    "dev-down": "docker compose down -v"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
