@@ -1,0 +1,66 @@
+[
+  {
+    "flag": {
+      "tenantId": "tenant-a",
+      "key": "new-homepage",
+      "name": "New Homepage",
+      "enabled": true,
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "fallthroughVariant": "off",
+      "rules": [
+        {
+          "id": "country-us",
+          "name": "US users",
+          "conditions": [
+            { "attribute": "country", "operator": "eq", "value": "US" }
+          ],
+          "variant": "on",
+          "rolloutPercentage": 100
+        }
+      ],
+      "version": 1,
+      "createdAt": "2026-02-12T00:00:00.000Z",
+      "updatedAt": "2026-02-12T00:00:00.000Z"
+    },
+    "context": {
+      "key": "user-1",
+      "attributes": { "country": "US" }
+    },
+    "expectedVariant": "on"
+  },
+  {
+    "flag": {
+      "tenantId": "tenant-a",
+      "key": "new-homepage",
+      "name": "New Homepage",
+      "enabled": true,
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "fallthroughVariant": "off",
+      "rules": [
+        {
+          "id": "country-us",
+          "name": "US users",
+          "conditions": [
+            { "attribute": "country", "operator": "eq", "value": "US" }
+          ],
+          "variant": "on",
+          "rolloutPercentage": 100
+        }
+      ],
+      "version": 1,
+      "createdAt": "2026-02-12T00:00:00.000Z",
+      "updatedAt": "2026-02-12T00:00:00.000Z"
+    },
+    "context": {
+      "key": "user-2",
+      "attributes": { "country": "CA" }
+    },
+    "expectedVariant": "off"
+  }
+]
