@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: feature-flag-dashboards
+    orgId: 1
+    folder: Feature Flag Platform
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
