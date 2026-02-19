@@ -36,6 +36,30 @@ function waitForChildExit(child, timeoutMs = 5_000) {
   });
 }
 
+async function terminateUnixProcessGroup(child) {
+  if (!child || child.pid === undefined) {
+    return;
+  }
+
+  try {
+    process.kill(-child.pid, "SIGTERM");
+  } catch {
+    // Process group may already be gone.
+  }
+
+  const exitedAfterTerm = await waitForChildExit(child);
+  if (exitedAfterTerm || child.exitCode !== null) {
+    return;
+  }
+
+  try {
+    process.kill(-child.pid, "SIGKILL");
+  } catch {
+    // Process group may already be gone.
+  }
+  await waitForChildExit(child);
+}
+
 function hasFailedPublishMetric(metricsText) {
   // Depending on express route label resolution, path can be templated or concrete.
   const byTemplate = /ff_http_requests_total\{[^}]*path="\/flags\/:flagKey\/publish"[^}]*status="404"/m;
@@ -60,12 +84,7 @@ async function killProcessTree(child) {
     return;
   }
 
-  child.kill("SIGTERM");
-  const exitedAfterTerm = await waitForChildExit(child);
-  if (!exitedAfterTerm && child.exitCode === null) {
-    child.kill("SIGKILL");
-    await waitForChildExit(child);
-  }
+  await terminateUnixProcessGroup(child);
 }
 
 function runControlPlane() {
@@ -85,6 +104,7 @@ function runControlPlane() {
             ...process.env,
             PORT: "8080"
           },
+          detached: true,
           stdio: ["ignore", "pipe", "pipe"]
         });
 

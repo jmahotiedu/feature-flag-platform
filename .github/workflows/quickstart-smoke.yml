@@ -16,4 +16,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run quickstart:smoke
+      - run: timeout --signal=TERM --kill-after=30s 15m npm run quickstart:smoke
