@@ -24,6 +24,8 @@
     "drill:redis-stale": "node scripts/drills/redis-stale-state-check.mjs",
     "quickstart:smoke": "npm run demo:e2e-live",
     "dev-up": "docker compose up -d",
+    "dev-up:full": "docker compose --profile app up -d",
+    "dev-up:aws-target": "docker compose --profile app up -d control-plane ui",
     "dev-down": "docker compose down -v"
   },
   "devDependencies": {

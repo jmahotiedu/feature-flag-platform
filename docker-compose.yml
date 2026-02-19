@@ -1,4 +1,27 @@
 services:
+  control-plane:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile.control-plane
+    environment:
+      PORT: 8080
+      FF_TOKENS: ${FF_TOKENS:-admin-token:admin,operator-token:operator,viewer-token:viewer}
+      DATABASE_URL: ${DATABASE_URL:-postgres://flags:flags@postgres:5432/flags}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - "8080:8080"
+
+  ui:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    ports:
+      - "5173:80"
+
   postgres:
     image: postgres:16-alpine
     environment:

@@ -12,7 +12,7 @@ export interface TenantQuotaSummary {
   remainingFlags: number;
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 const TOKEN = import.meta.env.VITE_API_TOKEN ?? "admin-token";
 const TENANT = import.meta.env.VITE_TENANT_ID ?? "tenant-a";
 

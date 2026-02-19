@@ -49,6 +49,12 @@ npm run setup
 npm run dev-up
 ```
 
+### Run app containers (local parity with AWS images)
+
+```bash
+npm run dev-up:full
+```
+
 ### Start control-plane
 
 ```bash
@@ -75,6 +81,68 @@ npm run drill:incident
 npm run drill:redis-stale
 ```
 
+## Cloud Deployment
+
+### AWS Architecture
+
+```mermaid
+graph TD
+  U[Users] --> ALB[Application Load Balancer]
+  ALB --> UI[ECS Fargate UI Service]
+  ALB --> API[ECS Fargate Control-Plane API]
+  API --> RDS[(RDS PostgreSQL)]
+  API --> REDIS[(ElastiCache Redis)]
+  API --> CW1[CloudWatch Logs]
+  UI --> CW2[CloudWatch Logs]
+  GH[GitHub Actions workflow_dispatch] --> TF[Terraform Apply]
+  TF --> ALB
+  TF --> API
+  TF --> UI
+  TF --> RDS
+  TF --> REDIS
+  TF --> ECR[ECR Repositories]
+```
+
+### Deploy / Teardown
+
+Terraform uses S3 backend state with DynamoDB locking (bootstrapped in script).
+
+```bash
+export DB_PASSWORD='replace-with-strong-password'
+
+# Plan + apply
+./scripts/deploy.sh
+
+# Plan only
+APPLY=false ./scripts/deploy.sh
+
+# Cloud smoke (ALB + /api/health)
+./scripts/cloud-smoke.sh
+
+# Teardown infra
+./scripts/teardown.sh
+```
+
+GitHub Actions manual deploy:
+- `.github/workflows/terraform-deploy.yml`
+- Unified multi-project teardown script: `~/projects/scripts/teardown-all.sh`
+
+Estimated running cost (continuous): about `$45-$95/month`.
+
+### Deployment Evidence
+
+- Dry-run plan executed on `2026-02-18` via `scripts/deploy.sh` (`APPLY=false`).
+- Result: `Plan: 35 to add, 0 to change, 0 to destroy`.
+- State backend bootstrap confirmed:
+  - S3 state bucket created
+  - DynamoDB lock table created
+- Live apply executed on `2026-02-18` via `scripts/deploy.sh` (`APPLY=true`).
+- ALB URL: `http://feature-flag-demo-alb-1145770048.us-east-1.elb.amazonaws.com`
+- Health verification:
+  - `GET /api/health` -> `200 {"ok":true}`
+  - `GET /` -> `200`
+- Repeatable verification script: `scripts/cloud-smoke.sh`.
+
 ## API auth
 
 Default tokens:
@@ -96,3 +164,4 @@ Use `Authorization: Bearer <token>` and `x-tenant-id: <tenant>` for tenant-scope
 - In-memory storage is used for local development speed; SQL migrations are provided for production persistence shape.
 - At-least-once publish propagation semantics are preferred over exactly-once complexity for v1.
 - Idempotency is request-key based and scoped by token + route for safe retry behavior.
+- AWS deployment provisions RDS and Redis for managed service topology; current control-plane runtime remains in-memory unless persistence integration is enabled in application code.
