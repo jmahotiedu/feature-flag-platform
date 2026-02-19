@@ -9,6 +9,33 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 const baseUrl = "http://127.0.0.1:8080";
 
+function waitForChildExit(child, timeoutMs = 5_000) {
+  if (!child || child.exitCode !== null) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      child.off("close", onClose);
+      child.off("exit", onExit);
+      resolve(result);
+    };
+
+    const onClose = () => finish(true);
+    const onExit = () => finish(true);
+    const timer = setTimeout(() => finish(false), timeoutMs);
+
+    child.once("close", onClose);
+    child.once("exit", onExit);
+  });
+}
+
 function hasFailedPublishMetric(metricsText) {
   // Depending on express route label resolution, path can be templated or concrete.
   const byTemplate = /ff_http_requests_total\{[^}]*path="\/flags\/:flagKey\/publish"[^}]*status="404"/m;
@@ -29,9 +56,16 @@ async function killProcessTree(child) {
       killer.on("close", () => resolve());
       killer.on("error", () => resolve());
     });
+    await waitForChildExit(child);
     return;
   }
+
   child.kill("SIGTERM");
+  const exitedAfterTerm = await waitForChildExit(child);
+  if (!exitedAfterTerm && child.exitCode === null) {
+    child.kill("SIGKILL");
+    await waitForChildExit(child);
+  }
 }
 
 function runControlPlane() {
