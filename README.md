@@ -94,7 +94,7 @@ graph TD
   API --> REDIS[(ElastiCache Redis)]
   API --> CW1[CloudWatch Logs]
   UI --> CW2[CloudWatch Logs]
-  GH[GitHub Actions workflow_dispatch] --> TF[Terraform Apply]
+  GH[GitHub Actions auto+manual deploy] --> TF[Terraform Apply]
   TF --> ALB
   TF --> API
   TF --> UI
@@ -123,7 +123,10 @@ APPLY=false ./scripts/deploy.sh
 ./scripts/teardown.sh
 ```
 
-GitHub Actions manual deploy:
+GitHub Actions deploy workflows:
+- Auto deploy on push (main): `.github/workflows/auto-deploy.yml`
+  - Builds/pushes images with immutable SHA tag, applies Terraform, and runs `scripts/cloud-smoke.sh`.
+  - Includes preflight secret guard and skips safely when deploy secrets are unavailable.
 - `.github/workflows/terraform-deploy.yml`
 - Unified multi-project teardown script: `~/projects/scripts/teardown-all.sh`
 
