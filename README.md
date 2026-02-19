@@ -2,6 +2,12 @@
 
 A portfolio-oriented feature flag platform demonstrating distributed systems design, deterministic evaluation logic, and production engineering discipline.
 
+## Live Cloud Deployment
+
+- Live URL: `http://feature-flag-demo-alb-1145770048.us-east-1.elb.amazonaws.com`
+- Health: `http://feature-flag-demo-alb-1145770048.us-east-1.elb.amazonaws.com/api/health`
+- Infra: ECS Fargate (API/UI), ALB, RDS Postgres, ElastiCache Redis, ECR, Terraform
+
 ## 90-Second Reviewer TL;DR
 
 If you have under 90 seconds, run this:
