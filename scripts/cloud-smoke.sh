@@ -33,6 +33,8 @@ cd "${TF_DIR}"
 
 ALB_URL="$("${TERRAFORM_BIN}" output -raw alb_url)"
 API_HEALTH_URL="$("${TERRAFORM_BIN}" output -raw api_health_url)"
+API_TOKEN="${API_TOKEN:-admin-token}"
+TENANT_ID="${TENANT_ID:-tenant-a}"
 
 check_url() {
   local name="$1"
@@ -62,5 +64,35 @@ echo "API Health URL: ${API_HEALTH_URL}"
 
 check_url "ALB root" "${ALB_URL}" "^(200|301|302)$"
 check_url "API health" "${API_HEALTH_URL}" "^200$"
+
+flags_status="$("${CURL_BIN}" -sS -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer ${API_TOKEN}" \
+  -H "x-tenant-id: ${TENANT_ID}" \
+  "${ALB_URL}/api/flags")"
+if [[ "${flags_status}" != "200" ]]; then
+  echo "Authenticated flags check failed (${flags_status}): ${ALB_URL}/api/flags"
+  exit 1
+fi
+echo "Authenticated flags check passed (${flags_status})."
+
+quota_status="$("${CURL_BIN}" -sS -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer ${API_TOKEN}" \
+  -H "x-tenant-id: ${TENANT_ID}" \
+  "${ALB_URL}/api/tenants/${TENANT_ID}/quotas")"
+if [[ "${quota_status}" != "200" ]]; then
+  echo "Authenticated quota check failed (${quota_status}): ${ALB_URL}/api/tenants/${TENANT_ID}/quotas"
+  exit 1
+fi
+echo "Authenticated quota check passed (${quota_status})."
+
+double_api_status="$("${CURL_BIN}" -sS -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer ${API_TOKEN}" \
+  -H "x-tenant-id: ${TENANT_ID}" \
+  "${ALB_URL}/api/api/flags")"
+if [[ "${double_api_status}" == "200" ]]; then
+  echo "Unexpected 200 for doubled API path: ${ALB_URL}/api/api/flags"
+  exit 1
+fi
+echo "Doubled API path guard passed (${double_api_status})."
 
 echo "Cloud smoke passed for feature-flag-platform."

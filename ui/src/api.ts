@@ -12,47 +12,59 @@ export interface TenantQuotaSummary {
   remainingFlags: number;
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
-const TOKEN = import.meta.env.VITE_API_TOKEN ?? "admin-token";
-const TENANT = import.meta.env.VITE_TENANT_ID ?? "tenant-a";
+export interface ApiSession {
+  token: string;
+  tenantId: string;
+}
 
-function headers(extra?: Record<string, string>): HeadersInit {
+export const DEFAULT_API_TOKEN = import.meta.env.VITE_API_TOKEN ?? "admin-token";
+export const DEFAULT_TENANT_ID = import.meta.env.VITE_TENANT_ID ?? "tenant-a";
+
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(/\/+$/, "");
+
+function headers(session: ApiSession, extra?: Record<string, string>): HeadersInit {
   return {
-    Authorization: `Bearer ${TOKEN}`,
-    "x-tenant-id": TENANT,
+    Authorization: `Bearer ${session.token}`,
+    "x-tenant-id": session.tenantId,
     "Content-Type": "application/json",
     ...(extra ?? {})
   };
 }
 
-export async function listFlags(): Promise<UiFlag[]> {
-  const response = await fetch(`${BASE_URL}/api/flags`, {
-    headers: headers()
+async function request<T>(path: string, session: ApiSession, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      ...(init?.headers ?? {}),
+      ...headers(session)
+    }
   });
   if (!response.ok) {
-    throw new Error(`Failed to fetch flags (${response.status})`);
+    const body = await response.text();
+    const suffix = body ? `: ${body}` : "";
+    throw new Error(`Request failed (${response.status})${suffix}`);
   }
-  const payload = (await response.json()) as { flags: UiFlag[] };
+  return (await response.json()) as T;
+}
+
+export async function listFlags(session: ApiSession): Promise<UiFlag[]> {
+  const payload = await request<{ flags: UiFlag[] }>("/flags", session);
   return payload.flags;
 }
 
-export async function getTenantQuotas(): Promise<TenantQuotaSummary> {
-  const response = await fetch(`${BASE_URL}/api/tenants/${TENANT}/quotas`, {
-    headers: headers()
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch tenant quotas (${response.status})`);
-  }
-  const payload = (await response.json()) as { quotas: TenantQuotaSummary };
+export async function getTenantQuotas(session: ApiSession): Promise<TenantQuotaSummary> {
+  const payload = await request<{ quotas: TenantQuotaSummary }>(
+    `/tenants/${encodeURIComponent(session.tenantId)}/quotas`,
+    session
+  );
   return payload.quotas;
 }
 
-export async function createFlag(input: { key: string; name: string }): Promise<UiFlag> {
-  const response = await fetch(`${BASE_URL}/api/flags`, {
+export async function createFlag(session: ApiSession, input: { key: string; name: string }): Promise<UiFlag> {
+  const payload = await request<{ flag: UiFlag }>("/flags", session, {
     method: "POST",
-    headers: headers(),
     body: JSON.stringify({
-      tenantId: TENANT,
+      tenantId: session.tenantId,
       key: input.key,
       name: input.name,
       enabled: true,
@@ -64,35 +76,30 @@ export async function createFlag(input: { key: string; name: string }): Promise<
       rules: []
     })
   });
-  if (!response.ok) {
-    throw new Error(`Failed to create flag (${response.status})`);
-  }
-  const payload = (await response.json()) as { flag: UiFlag };
   return payload.flag;
 }
 
-export async function publishFlag(flagKey: string): Promise<number> {
-  const response = await fetch(`${BASE_URL}/api/flags/${flagKey}/publish`, {
-    method: "POST",
-    headers: headers({ "Idempotency-Key": `publish-${flagKey}` }),
-    body: JSON.stringify({ tenantId: TENANT })
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to publish flag (${response.status})`);
-  }
-  const payload = (await response.json()) as { published: { version: number } };
+export async function publishFlag(session: ApiSession, flagKey: string): Promise<number> {
+  const payload = await request<{ published: { version: number } }>(
+    `/flags/${encodeURIComponent(flagKey)}/publish`,
+    session,
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": `publish-${flagKey}` },
+      body: JSON.stringify({ tenantId: session.tenantId })
+    }
+  );
   return payload.published.version;
 }
 
-export async function rollbackFlag(flagKey: string, targetVersion: number): Promise<number> {
-  const response = await fetch(`${BASE_URL}/api/flags/${flagKey}/rollback`, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ tenantId: TENANT, targetVersion })
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to rollback flag (${response.status})`);
-  }
-  const payload = (await response.json()) as { rolledBack: { version: number } };
+export async function rollbackFlag(session: ApiSession, flagKey: string, targetVersion: number): Promise<number> {
+  const payload = await request<{ rolledBack: { version: number } }>(
+    `/flags/${encodeURIComponent(flagKey)}/rollback`,
+    session,
+    {
+      method: "POST",
+      body: JSON.stringify({ tenantId: session.tenantId, targetVersion })
+    }
+  );
   return payload.rolledBack.version;
 }

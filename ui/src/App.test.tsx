@@ -65,7 +65,11 @@ describe("App", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(5);
     });
-    expect(screen.getByText(/Tenant quota:/)).toBeInTheDocument();
+    expect(screen.getByText(/flags used/)).toBeInTheDocument();
+    const requestedUrls = fetchMock.mock.calls
+      .map((args) => String(args[0]))
+      .join("\n");
+    expect(requestedUrls).not.toContain("/api/api/");
   });
 
   it("creates a flag", async () => {

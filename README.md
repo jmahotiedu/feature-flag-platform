@@ -141,7 +141,17 @@ Estimated running cost (continuous): about `$45-$95/month`.
 - Health verification:
   - `GET /api/health` -> `200 {"ok":true}`
   - `GET /` -> `200`
+- Functional verification (`2026-02-19`):
+  - `GET /api/flags` with `Authorization: Bearer admin-token` + `x-tenant-id: tenant-a` -> `200`
+  - `GET /api/tenants/tenant-a/quotas` with the same headers -> `200`
 - Repeatable verification script: `scripts/cloud-smoke.sh`.
+
+### Live UI Notes
+
+- The live admin UI requires both a token and tenant context.
+- Defaults are `admin-token` and `tenant-a`, and both can be changed in the UI.
+- If a tenant has no data yet, the UI will be empty until you create flags or use the built-in seed action.
+- No third-party API keys are required for demo usage.
 
 ## API auth
 
