@@ -2,11 +2,25 @@
 
 A portfolio-oriented feature flag platform demonstrating distributed systems design, deterministic evaluation logic, and production engineering discipline.
 
-## Live Cloud Deployment
+[![CI](https://github.com/jmahotiedu/feature-flag-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/jmahotiedu/feature-flag-platform/actions/workflows/ci.yml)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-ECS_Fargate-FF9900?logo=amazonaws&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?logo=terraform&logoColor=white)
 
-- Live URL: `http://feature-flag-demo-alb-1145770048.us-east-1.elb.amazonaws.com`
-- Health: `http://feature-flag-demo-alb-1145770048.us-east-1.elb.amazonaws.com/api/health`
-- Infra: ECS Fargate (API/UI), ALB, RDS Postgres, ElastiCache Redis, ECR, Terraform
+## Cloud Deployment Status
+
+Cloud infrastructure was deployed live on AWS on 2026-02-18, smoke-tested on 2026-02-19, and deprovisioned on 2026-02-19 to manage costs.
+
+To reproduce:
+
+```bash
+./scripts/deploy.sh
+./scripts/cloud-smoke.sh
+```
 
 ## 90-Second Reviewer TL;DR
 
@@ -18,7 +32,7 @@ npm run quickstart:smoke
 
 It starts the control-plane, performs create/publish/evaluate/rollback checks, validates idempotency replay, and writes a report to `docs/demo/live-e2e-report.md`.
 
-## What this is
+## Features
 
 This project implements:
 - Multi-tenant feature flag control-plane API.
@@ -27,6 +41,20 @@ This project implements:
 - Admin UI for listing/creating/publishing flags.
 - Metrics, load-test scripts, and operations docs.
 - Tenant quota controls with usage endpoint (`GET /api/tenants/:tenantId/quotas`).
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Language | TypeScript (Node.js 22) |
+| API | Express, REST |
+| Database | PostgreSQL (RDS) |
+| Cache | Redis (ElastiCache) |
+| Frontend | React, Vite |
+| Infrastructure | Terraform, ECS Fargate, ALB, ECR |
+| Observability | Prometheus, Grafana, CloudWatch |
+| CI/CD | GitHub Actions |
+| Testing | Vitest, load testing |
 
 ## Architecture
 
@@ -140,14 +168,17 @@ Estimated running cost (continuous): about `$45-$95/month`.
 
 ### Deployment Evidence
 
+<details>
+<summary>AWS apply + smoke artifacts (Feb 2026)</summary>
+
 - Dry-run plan executed on `2026-02-18` via `scripts/deploy.sh` (`APPLY=false`).
 - Result: `Plan: 35 to add, 0 to change, 0 to destroy`.
 - State backend bootstrap confirmed:
   - S3 state bucket created
   - DynamoDB lock table created
 - Live apply executed on `2026-02-18` via `scripts/deploy.sh` (`APPLY=true`).
-- ALB URL: `http://feature-flag-demo-alb-1145770048.us-east-1.elb.amazonaws.com`
-- Health verification:
+- Historical ALB URL (now deprovisioned): `http://feature-flag-demo-alb-1145770048.us-east-1.elb.amazonaws.com`
+- Health verification at deploy time:
   - `GET /api/health` -> `200 {"ok":true}`
   - `GET /` -> `200`
 - Functional verification (`2026-02-19`):
@@ -155,9 +186,11 @@ Estimated running cost (continuous): about `$45-$95/month`.
   - `GET /api/tenants/tenant-a/quotas` with the same headers -> `200`
 - Repeatable verification script: `scripts/cloud-smoke.sh`.
 
-### Live UI Notes
+</details>
 
-- The live admin UI requires both a token and tenant context.
+### Cloud Demo Notes (When Deployed)
+
+- The admin UI requires both a token and tenant context.
 - Defaults are `admin-token` and `tenant-a`, and both can be changed in the UI.
 - If a tenant has no data yet, the UI will be empty until you create flags or use the built-in seed action.
 - No third-party API keys are required for demo usage.
